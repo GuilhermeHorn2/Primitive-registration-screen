@@ -1,0 +1,336 @@
+from tkinter import*
+from tkinter import filedialog
+import sqlite3
+root = Tk()
+root.geometry('400x600')
+
+# connect to a data base
+conn = sqlite3.connect('address_book.db')
+
+# create a cursor
+c = conn.cursor()
+
+
+# create table
+# c.execute("""CREATE TABLE addresses (
+#          first_name text,
+#          last_name text,
+#          address text,
+#          city text,
+#          state text,
+#          zipcode integer
+# )
+# """)
+
+
+# creating the update function
+def update():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    variable = delbox.get()
+
+    c.execute('''UPDATE addresses SET 
+          first_name = :first,
+          last_name = :last,
+         address = :address,
+          city = :city,
+          state = :state,
+         zipcode = :zipcode
+
+         WHERE oid = :oid''',
+
+              {'first': f_name_edit.get(),
+               'last': l_name_edit.get(),
+               'address': add_edit.get(),
+               'city': city_edit.get(),
+               'state': state_edit.get(),
+               'zipcode': zip_edit.get(),
+               'oid': variable
+               })
+
+    # submit the changes
+    conn.commit()
+    # close connection
+    conn.close()
+
+    # clear p n repetir info
+    # f_name_edit.delete(0, END)
+    # l_name_edit.delete(0, END)
+    # add_edit.delete(0, END)
+    # city_edit.delete(0, END)
+    # state_edit.delete(0, END)
+    # zip_edit.delete(0, END)
+    # ou...
+    editor.destroy()
+
+
+
+
+# creting the fucntion who copy the information to another screen so i can edit that
+def edit():
+    global editor
+    global srch
+    editor = Tk()
+    editor.geometry('400x600')
+
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    variable = delbox.get()
+
+    # outputing the data
+    c.execute('SELECT * FROM addresses WHERE oid = ' + variable)
+    rec = c.fetchall()
+    # print(rec)
+
+    # putting them global
+    global f_name_edit
+    global l_name_edit
+    global add_edit
+    global city_edit
+    global state_edit
+    global zip_edit
+
+    # create text boxes,entry widgets podem ser .get()
+    f_name_edit = Entry(editor, width=30)
+    f_name_edit.grid(row=0, column=1, padx=20, pady=(10, 0))
+    l_name_edit = Entry(editor, width=30)
+    l_name_edit.grid(row=1, column=1, padx=20)
+    add_edit = Entry(editor, width=30)
+    add_edit.grid(row=2, column=1, padx=20)
+    city_edit = Entry(editor, width=30)
+    city_edit.grid(row=3, column=1, padx=20)
+    state_edit = Entry(editor, width=30)
+    state_edit.grid(row=4, column=1, padx=20)
+    zip_edit = Entry(editor, width=30)
+    zip_edit.grid(row=5, column=1, padx=20)
+
+    # create text box labels
+    f_namelbl_edit = Label(editor, text='First name')
+    f_namelbl_edit.grid(row=0, column=0, pady=(10, 0))
+    l_namelbl_edit = Label(editor, text='Last name')
+    l_namelbl_edit.grid(row=1, column=0)
+    addlbl_edit = Label(editor, text='Address')
+    addlbl_edit.grid(row=2, column=0)
+    citylbl_edit = Label(editor, text='City')
+    citylbl_edit.grid(row=3, column=0)
+    statelbl_edit = Label(editor, text='State')
+    statelbl_edit.grid(row=4, column=0)
+    ziplbl_edit = Label(editor, text='Zip code')
+    ziplbl_edit.grid(row=5, column=0)
+
+    # search box label
+    search_lbl = Label(editor, text='Search(City or names)')
+    search_lbl.grid(row=12, column=0)
+
+    # create a save button
+    save = Button(editor, text='Save changes', command=update)
+    save.grid(row=11, column=0, columnspan=2, pady=10, padx=10, ipadx=135)
+
+    # text box for search
+    srch = Entry(editor, width=30, text='Letter')
+    srch.grid(row=12, column=1, padx=20)
+
+    # button for seach
+    btn_scrh = Button(editor, text='Search for', command=find)
+    btn_scrh.grid(row=13, column=0, columnspan=2, pady=10, padx=10, ipadx=135)
+
+    # loop p montar cada linha
+    for record in rec:
+        f_name_edit.insert(0, record[0])
+        l_name_edit.insert(0, record[1])
+        add_edit.insert(0, record[2])
+        city_edit.insert(0, record[3])
+        state_edit.insert(0, record[4])
+        zip_edit.insert(0, record[5])
+
+def find():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+    incst = srch.get()
+
+    # outputing the data
+    c.execute(f"SELECT * FROM addresses WHERE first_name LIKE '{incst}%' OR last_name LIKE '{incst}%' OR city LIKE '{incst}%'")
+    rec = c.fetchall()
+    print_rec2 = ''
+    for n in rec:
+        print_rec2 += str(n[0]) + ' ' + str(n[1]) + ' ' + str(n[2]) + ' ' + str(n[3]) + ' ' + str(n[4]) + ' ' + str(n[5]) + '\n' #'' + str(n[6]) + '\n'
+        #print_rec2 += str(rec) + '\n'
+        #print_rec2 += str(rec)
+
+    lbl3 = Label(editor, text=print_rec2)
+    lbl3.grid(row=14, column=0, columnspan=2)
+
+    # submit the changes
+    conn.commit()
+    # close connection
+    conn.close()
+
+# creating function to delete a record
+def delete():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    # function itself
+    c.execute('DELETE  FROM addresses WHERE oid = ' + delbox.get())
+
+    # submit the changes
+    conn.commit()
+    # close connection
+    conn.close()
+
+
+# creating the function for the button
+def sub():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    # INSERT INTO  TABLE
+    c.execute('INSERT INTO addresses VALUES (:f_name, :l_name, :add, :city, :state, :zip)',
+              {
+                  "f_name": f_name.get(),
+                  'l_name': l_name.get(),
+                  "add": add.get(),
+                  "city": city.get(),
+                  "state": state.get(),
+                  "zip": zip.get()})
+
+    # submit the changes
+    conn.commit()
+    # close connection
+    conn.close()
+
+    # clear p n repetir info
+    f_name.delete(0, END)
+    l_name.delete(0, END)
+    add.delete(0, END)
+    city.delete(0, END)
+    state.delete(0, END)
+    zip.delete(0, END)
+
+
+# creating the function for output data
+def show():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    # outputing the data
+    c.execute('SELECT *,oid FROM addresses ORDER BY first_name')  # oid sao os numeros liagados a cada variavel
+    recs = c.fetchall()
+    #for x in recs:
+        #print(recs)
+
+     #loop p montar as linhas que serao mostradas
+    print_rec = ''
+    for record in recs:
+        print_rec += str(record[0]) + ' ' + str(record[1]) + '  ' + str(record[2]) + '  ' + str(record[3]) + '  ' + str(record[4]) + '  ' + str(record[5])  +  '\t' + str(record[6]) + '\n' + '\n'
+        #print_rec += str(recs) + '\n'
+
+    lbl3 = Label(root, text=print_rec)
+    lbl3.grid(row=13, column=0, columnspan=2)
+
+    # submit the changes
+    conn.commit()
+    # close connection
+    conn.close()
+
+
+# create text boxes,entry widgets podem ser .get()
+f_name = Entry(root, width=30)
+f_name.grid(row=0, column=1, padx=20, pady=(10, 0))
+l_name = Entry(root, width=30)
+l_name.grid(row=1, column=1, padx=20)
+add = Entry(root, width=30)
+add.grid(row=2, column=1, padx=20)
+city = Entry(root, width=30)
+city.grid(row=3, column=1, padx=20)
+state = Entry(root, width=30)
+state.grid(row=4, column=1, padx=20)
+zip = Entry(root, width=30)
+zip.grid(row=5, column=1, padx=20)
+
+# creating text boxes for the delete function
+delbox = Entry(root, width=30)
+delbox.grid(row=9, column=1, padx=20)
+
+# create text box labels
+fnamelbl = Label(root, text='First name')
+fnamelbl.grid(row=0, column=0, pady=(10, 0))
+lnamelbl = Label(root, text='Last name')
+lnamelbl.grid(row=1, column=0)
+addlbl = Label(root, text='Address')
+addlbl.grid(row=2, column=0)
+citylbl = Label(root, text='City')
+citylbl.grid(row=3, column=0)
+statelbl = Label(root, text='State')
+statelbl.grid(row=4, column=0)
+ziplbl = Label(root, text='Zip code')
+ziplbl.grid(row=5, column=0)
+
+# delete box label
+delbox_lbl = Label(root, text='Select')
+delbox_lbl.grid(row=9, column=0)
+
+# create submit button
+sub_btn = Button(root, text='Add to database', command=sub)
+sub_btn.grid(row=6, column=0, columnspan=2, pady=10, padx=10, ipadx=100)
+
+# create a btn to output the database
+out_btn = Button(root, text='Show data', command=show)
+out_btn.grid(row=7, column=0, columnspan=2, pady=10, padx=10, ipadx=137)
+
+# creating BUTTON for the delete function
+dlt = Button(root, text='Delete data', command=delete)
+dlt.grid(row=10, column=0, columnspan=2, pady=10, padx=10, ipadx=135)
+
+# creating BUTTON for update
+upd = Button(root, text='Update', command=edit)
+upd.grid(row=11, column=0, columnspan=2, pady=10, padx=10, ipadx=135)
+
+
+# creating the function to clear
+def clear():
+    # connect to a data base
+    conn = sqlite3.connect('address_book.db')
+    # create a cursor
+    c = conn.cursor()
+
+    length = len(f_name.get())
+    f_name.delete(length - 1, 'end')
+    length = len(l_name.get())
+    l_name.delete(length - 1, 'end')
+    length = len(add.get())
+    add.delete(length - 1, 'end')
+    length = len(state.get())
+    state.delete(length - 1, 'end')
+    length = len(city.get())
+    city.delete(length - 1, 'end')
+    length = len(zip.get())
+    zip.delete(length - 1, 'end')
+
+
+# creating the clear button
+clr = Button(root, text='Clear', command=clear)
+clr.grid(row=12, column=0, columnspan=2, pady=10, padx=10, ipadx=135)
+
+
+# submit the changes
+conn.commit()
+
+# close connection
+conn.close()
+
+root.mainloop()
